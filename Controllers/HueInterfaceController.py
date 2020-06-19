@@ -1,12 +1,13 @@
 import requests
 import json
 import ipaddress
+import logging
 
-class HueInterfaceController:
+class HueInterfaceController(object):
     """
     Interfaces with the Hue Bridge.
     """
-    def __init__(self):
+    def initialiseController(self):
         if (self.isConnectedToInternet() == False):
             return
         
@@ -14,6 +15,8 @@ class HueInterfaceController:
         self.accountUrl = ''
         self.generateBridgeToken = False
         self.fullAccessUrl = self.__getFullAccessUrl()
+
+        logging.info("[HueInterfaceController] Successfully initialised the Hue Interface Controller")
     
     def isConnectedToInternet(self):
         testUrl = "http://www.google.com/"
@@ -23,7 +26,7 @@ class HueInterfaceController:
             _ = requests.get(testUrl, timeout=timeoutSeconds)
             return True
         except requests.ConnectionError:
-            print("No internet connection! Should ping the display.")
+            logging.error("[HueInterfaceController] Unable to connect to the internet!")
             
         return False
     
@@ -52,7 +55,9 @@ class HueInterfaceController:
         try:
             return jsonResponse[0]['success']['username']
         except:
-            raise ValueError('Failed to Create Account with Error {}: {}'.format(jsonResponse[0]['error']['type'], jsonResponse[0]['error']['description']))
+            errorMessage = 'Failed to Create Account with Error {}: {}'.format(jsonResponse[0]['error']['type'], jsonResponse[0]['error']['description'])
+            logging.error(errorMessage)
+            raise ValueError(errorMessage)
         
     def __getFullAccessUrl(self):
         """
@@ -70,7 +75,7 @@ class HueInterfaceController:
         Returns false if the device is not connected to the internet.
         """
         if (self.isConnectedToInternet() == False):
-            return;            
+            return         
         
         url = '{}/lights'.format(self.fullAccessUrl)
         response = requests.get(url)
@@ -83,7 +88,7 @@ class HueInterfaceController:
         Returns false if the device is not connected to the internet.
         """
         if (self.isConnectedToInternet() == False):
-            return;
+            return
         
         url = '{}/lights/{}/state'.format(self.fullAccessUrl, lightId)
         
@@ -107,7 +112,7 @@ class HueInterfaceController:
         Change the brightness of the light according to the light id.
         """
         if (self.isConnectedToInternet() == False):
-            return;
+            return
         
         url = '{}/lights/{}/state'.format(self.fullAccessUrl, lightId)
         
@@ -146,13 +151,21 @@ class HueInterfaceController:
         Turns off all the lights.
         """
         if (self.isConnectedToInternet() == False):
-            return;
+            return
         
         lightCount = self.getAvailableLightsConnected()
         
         for x in range(lightCount):
             self.toggleHueLights(x, False)
 
-
-service = HueInterfaceController().getAvailableLightsConnected()
-
+    def turnOnAllTheLights(self):
+        """
+        Turns on all the lights.
+        """
+        if (self.isConnectedToInternet() == False):
+            return
+                    
+        lightCount = self.getAvailableLightsConnected()
+        
+        for x in range(lightCount):
+            self.toggleHueLights(x, True)
